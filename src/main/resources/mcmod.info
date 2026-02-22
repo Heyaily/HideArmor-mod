@@ -1,0 +1,16 @@
+[
+{
+  "modid": "hidearmor",
+  "name": "Hide Armor Mod",
+  "description": "プレイヤーごとの防具、刺さっている矢の表示非表示ができるmodです。",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["You"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

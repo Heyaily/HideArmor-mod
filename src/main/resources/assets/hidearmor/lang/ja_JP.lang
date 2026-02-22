@@ -1,0 +1,6 @@
+key.hidearmor.toggle=防具の表示/非表示
+key.categories.hidearmor=防具非表示MOD
+chat.hidearmor.hidden=§a防具を非表示にしました
+chat.hidearmor.shown=§c防具を表示しました
+general.hideArmor=防具を非表示にする
+key.hidearmor.opengui=設定画面を開く

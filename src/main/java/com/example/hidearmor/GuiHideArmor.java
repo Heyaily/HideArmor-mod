@@ -9,119 +9,138 @@ import net.minecraft.util.EnumParticleTypes;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class GuiHideArmor extends GuiScreen {
-    private List<String> targets = new ArrayList<String>();
+    private List<String> playerTargets = new ArrayList<String>();
     private int currentTargetIndex = 0;
+    private boolean isMobMode = false;
 
-    private GuiButton btnPrev, btnNext;
-    private GuiButton btnHelmet, btnChest, btnLegs, btnBoots;
+    private GuiButton btnMode, btnPrev, btnNext;
+    private GuiButton btnHelmet, btnChest, btnLegs, btnBoots, btnArrows, btnIcons;
     private GuiButton btnHideAll, btnShowAll;
-    private GuiButton btnArrows, btnIcons;
 
     @Override
     public void initGui() {
-        targets.clear();
-        targets.add("Global"); 
+        playerTargets.clear();
+        playerTargets.add("Global"); 
         if (Minecraft.getMinecraft().getNetHandler() != null) {
             for (NetworkPlayerInfo info : Minecraft.getMinecraft().getNetHandler().getPlayerInfoMap()) {
-                targets.add(info.getGameProfile().getName());
+                playerTargets.add(info.getGameProfile().getName());
             }
         }
 
         int cx = this.width / 2;
         int cy = this.height / 2;
+        int startY = cy - 100;
 
-        this.buttonList.add(btnPrev = new GuiButton(0, cx - 100, cy - 50, 20, 20, "<"));
-        this.buttonList.add(btnNext = new GuiButton(1, cx + 80, cy - 50, 20, 20, ">"));
-
-        this.buttonList.add(btnHelmet = new GuiButton(5, cx - 60, cy - 25, 120, 20, ""));
-        this.buttonList.add(btnChest = new GuiButton(4, cx - 60, cy - 2, 120, 20, ""));
-        this.buttonList.add(btnLegs = new GuiButton(3, cx - 60, cy + 21, 120, 20, ""));
-        this.buttonList.add(btnBoots = new GuiButton(2, cx - 60, cy + 44, 120, 20, ""));
-        this.buttonList.add(btnArrows = new GuiButton(8, cx - 60, cy + 67, 120, 20, ""));
-        this.buttonList.add(btnIcons = new GuiButton(9, cx - 60, cy + 90, 120, 20, ""));
-        
-        this.buttonList.add(btnHideAll = new GuiButton(6, cx - 60, cy + 115, 58, 20, "Hide All"));
-        this.buttonList.add(btnShowAll = new GuiButton(7, cx + 2, cy + 115, 58, 20, "Show All"));
+        this.buttonList.add(btnMode = new GuiButton(10, cx - 75, startY, 150, 20, "Mode: Players"));
+        this.buttonList.add(btnPrev = new GuiButton(0, cx - 100, startY + 25, 20, 20, "<"));
+        this.buttonList.add(btnNext = new GuiButton(1, cx + 80, startY + 25, 20, 20, ">"));
+        this.buttonList.add(btnHelmet = new GuiButton(5, cx - 75, startY + 50, 150, 20, "Helmet"));
+        this.buttonList.add(btnChest  = new GuiButton(4, cx - 75, startY + 72, 150, 20, "Chestplate"));
+        this.buttonList.add(btnLegs   = new GuiButton(3, cx - 75, startY + 94, 150, 20, "Leggings"));
+        this.buttonList.add(btnBoots  = new GuiButton(2, cx - 75, startY + 116, 150, 20, "Boots"));
+        this.buttonList.add(btnArrows = new GuiButton(8, cx - 75, startY + 138, 150, 20, "Arrows"));
+        this.buttonList.add(btnIcons  = new GuiButton(9, cx - 75, startY + 160, 150, 20, "Icons"));
+        this.buttonList.add(btnHideAll = new GuiButton(6, cx - 75, startY + 185, 72, 20, "§cHide All"));
+        this.buttonList.add(btnShowAll = new GuiButton(7, cx + 3, startY + 185, 72, 20, "§aShow All"));
 
         updateButtons();
     }
 
     private void updateButtons() {
-        String target = targets.get(currentTargetIndex);
+        String target = isMobMode ? "Mobs" : playerTargets.get(currentTargetIndex);
         boolean[] settings = ConfigHandler.getSettings(target);
-        
-        btnHelmet.displayString = "Helmet: " + (settings[3] ? "§cHidden" : "§aShown");
-        btnChest.displayString = "Chestplate: " + (settings[2] ? "§cHidden" : "§aShown");
-        btnLegs.displayString = "Leggings: " + (settings[1] ? "§cHidden" : "§aShown");
-        btnBoots.displayString = "Boots: " + (settings[0] ? "§cHidden" : "§aShown");
-        btnArrows.displayString = "Stuck Arrows: " + (settings[4] ? "§cHidden" : "§aShown");
-        btnIcons.displayString = "Armor Icons: " + (settings[5] ? "§cHidden" : "§aShown");
+
+        btnMode.displayString = isMobMode ? "Mode: §eMobs" : "Mode: §bPlayers";
+        btnPrev.enabled = btnNext.enabled = !isMobMode;
+
+        btnHelmet.displayString = (settings[3] ? "§c" : "§a") + "Helmet";
+        btnChest.displayString  = (settings[2] ? "§c" : "§a") + "Chestplate";
+        btnLegs.displayString   = (settings[1] ? "§c" : "§a") + "Leggings";
+        btnBoots.displayString  = (settings[0] ? "§c" : "§a") + "Boots";
+        btnArrows.displayString = (settings[4] ? "§c" : "§a") + "Arrows";
+        btnIcons.displayString  = (settings[5] ? "§c" : "§a") + "Icons";
+
+        if (isMobMode) {
+            btnArrows.enabled = false;
+            btnArrows.displayString = "§8Arrows";
+        } else {
+            btnArrows.enabled = true;
+        }
     }
 
-    private void spawnParticles(String target, boolean isHidden) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.theWorld == null) return;
-        
-        EntityPlayer player = null;
-        if (target.equals("Global")) {
-            player = mc.thePlayer;
+    private void playToggleSound(boolean isHiding) {
+        if (isHiding) {
+            Minecraft.getMinecraft().thePlayer.playSound("random.fizz", 1.0F, 1.5F);
         } else {
-            player = mc.theWorld.getPlayerEntityByName(target);
+            Minecraft.getMinecraft().thePlayer.playSound("random.orb", 1.0F, 1.2F);
         }
+    }
 
-        if (player != null) {
-            for (int i = 0; i < 50; i++) {
-                double x = player.posX + (mc.theWorld.rand.nextDouble() - 0.5D) * player.width * 2.5D;
-                double y = player.posY + mc.theWorld.rand.nextDouble() * player.height * 1.5D;
-                double z = player.posZ + (mc.theWorld.rand.nextDouble() - 0.5D) * player.width * 2.5D;
-                
-                double vx = (mc.theWorld.rand.nextDouble() - 0.5D) * 0.2D;
-                double vy = (mc.theWorld.rand.nextDouble() - 0.5D) * 0.2D;
-                double vz = (mc.theWorld.rand.nextDouble() - 0.5D) * 0.2D;
+    private void spawnParticles(String target, boolean hidden) {
+        EntityPlayer p = target.equals("Global") || target.equals("Mobs") ? 
+                        Minecraft.getMinecraft().thePlayer : 
+                        Minecraft.getMinecraft().theWorld.getPlayerEntityByName(target);
 
-                if (isHidden) {
-                    mc.theWorld.spawnParticle(EnumParticleTypes.SMOKE_LARGE, x, y, z, vx, vy, vz);
-                    if (i % 2 == 0) mc.theWorld.spawnParticle(EnumParticleTypes.CLOUD, x, y, z, vx * 0.5, vy * 0.5, vz * 0.5);
-                } else {
-                    mc.theWorld.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, x, y, z, vx, vy, vz);
-                    if (i % 2 == 0) mc.theWorld.spawnParticle(EnumParticleTypes.CRIT_MAGIC, x, y, z, vx * 1.5, vy * 1.5, vz * 1.5);
-                }
+        if (p != null) {
+            Random rand = new Random();
+            for (int i = 0; i < 20; i++) {
+                double x = p.posX + (rand.nextDouble() - 0.5D) * p.width;
+                double y = p.posY + rand.nextDouble() * p.height;
+                double z = p.posZ + (rand.nextDouble() - 0.5D) * p.width;
+                EnumParticleTypes pt = hidden ? EnumParticleTypes.SPELL_WITCH : EnumParticleTypes.VILLAGER_HAPPY;
+                Minecraft.getMinecraft().theWorld.spawnParticle(pt, x, y, z, 0, 0, 0);
             }
-            if (isHidden) mc.theWorld.playSound(player.posX, player.posY, player.posZ, "random.fizz", 0.8F, 0.8F, false);
-            else mc.theWorld.playSound(player.posX, player.posY, player.posZ, "random.orb", 0.5F, 1.0F, false);
         }
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
-        String target = targets.get(currentTargetIndex);
-        
-        if (button.id == 0) { 
-            currentTargetIndex--;
-            if (currentTargetIndex < 0) currentTargetIndex = targets.size() - 1;
+        if (button.id == 0 || button.id == 1 || button.id == 10) {
+            Minecraft.getMinecraft().thePlayer.playSound("random.click", 1.0F, 1.0F);
+        }
+
+        if (button.id == 10) {
+            isMobMode = !isMobMode;
             updateButtons();
-        } else if (button.id == 1) { 
-            currentTargetIndex++;
-            if (currentTargetIndex >= targets.size()) currentTargetIndex = 0;
-            updateButtons();
-        } else if ((button.id >= 2 && button.id <= 5) || button.id == 8 || button.id == 9) { 
-            int slot = button.id == 9 ? 5 : button.id == 8 ? 4 : button.id - 2; 
-            boolean current = ConfigHandler.getSettings(target)[slot];
-            boolean newValue = !current;
-            ConfigHandler.setSetting(target, slot, newValue); 
+            return;
+        }
+
+        if (!isMobMode) {
+            if (button.id == 0) {
+                currentTargetIndex = (currentTargetIndex - 1 + playerTargets.size()) % playerTargets.size();
+                updateButtons();
+                return;
+            } else if (button.id == 1) {
+                currentTargetIndex = (currentTargetIndex + 1) % playerTargets.size();
+                updateButtons();
+                return;
+            }
+        }
+
+        String target = isMobMode ? "Mobs" : playerTargets.get(currentTargetIndex);
+
+        if ((button.id >= 2 && button.id <= 5) || button.id == 8 || button.id == 9) {
+            int slot = button.id == 9 ? 5 : button.id == 8 ? 4 : button.id == 5 ? 3 : button.id == 4 ? 2 : button.id == 3 ? 1 : 0;
+            boolean newValue = !ConfigHandler.getSettings(target)[slot];
+            ConfigHandler.setSetting(target, slot, newValue);
+
+            playToggleSound(newValue);
             
             spawnParticles(target, newValue);
             updateButtons();
-        } else if (button.id == 6) { 
+        } else if (button.id == 6) {
             for (int i = 0; i < 5; i++) ConfigHandler.setSetting(target, i, true);
             ConfigHandler.setSetting(target, 5, false);
+            playToggleSound(true);
             spawnParticles(target, true);
             updateButtons();
         } else if (button.id == 7) { 
             for (int i = 0; i < 5; i++) ConfigHandler.setSetting(target, i, false);
             ConfigHandler.setSetting(target, 5, true);
+            playToggleSound(false);
             spawnParticles(target, false);
             updateButtons();
         }
@@ -130,11 +149,16 @@ public class GuiHideArmor extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
-        this.drawCenteredString(this.fontRendererObj, "Hide Armor & Effects", this.width / 2, 20, 0xFFFFFF);
+        this.drawCenteredString(this.fontRendererObj, "Hide Armor Settings", this.width / 2, 20, 0xFFFFFF);
         
-        String target = targets.get(currentTargetIndex);
-        String displayTarget = target.equals("Global") ? "Target: §eGLOBAL (全員)" : "Target: §b" + target;
-        this.drawCenteredString(this.fontRendererObj, displayTarget, this.width / 2, this.height / 2 - 45, 0xFFFFFF);
+        String targetText;
+        if (isMobMode) {
+            targetText = "Target: §eALL MOBS";
+        } else {
+            String name = playerTargets.get(currentTargetIndex);
+            targetText = name.equals("Global") ? "Target: §eGLOBAL" : "Target: §b" + name;
+        }
+        this.drawCenteredString(this.fontRendererObj, targetText, this.width / 2, (this.height / 2) - 75, 0xFFFFFF);
         
         super.drawScreen(mouseX, mouseY, partialTicks);
     }

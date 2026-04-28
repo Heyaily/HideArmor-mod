@@ -12,7 +12,11 @@ public class ConfigHandler {
     }
 
     public static boolean[] getSettings(String target) {
-        String category = target.equals("Global") ? "global" : "player_" + target;
+        String category;
+        if (target.equals("Global")) category = "global";
+        else if (target.equals("Mobs")) category = "mobs";
+        else category = "player_" + target;
+        
         boolean h = config.getBoolean("hideHelmet", category, false, "");
         boolean c = config.getBoolean("hideChestplate", category, false, "");
         boolean l = config.getBoolean("hideLeggings", category, false, "");
@@ -23,7 +27,11 @@ public class ConfigHandler {
     }
 
     public static void setSetting(String target, int slot, boolean value) {
-        String category = target.equals("Global") ? "global" : "player_" + target;
+        String category;
+        if (target.equals("Global")) category = "global";
+        else if (target.equals("Mobs")) category = "mobs";
+        else category = "player_" + target;
+
         String key = slot == 5 ? "hideIcons" : slot == 4 ? "hideArrows" : slot == 3 ? "hideHelmet" : slot == 2 ? "hideChestplate" : slot == 1 ? "hideLeggings" : "hideBoots";
         config.get(category, key, false).set(value);
         config.save();
